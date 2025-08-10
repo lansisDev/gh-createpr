@@ -8,12 +8,12 @@ const program = new Command();
 
 program
   .name("createpr")
-  .description("Crea un Pull Request en GitHub a partir de un ticket de Jira")
-  .argument("<JIRA_TICKET>", "Ej: LAN-3")
+  .description("Create a GitHub Pull Request from a Jira ticket")
+  .argument("<JIRA_TICKET>", "Example: LAN-3")
   .action(async (JIRA_TICKET: string) => {
     try {
       if (!JIRA_TICKET) {
-        console.error(`Uso: gh createpr JIRA_TICKET (ej: LAN-3)`);
+        console.error(`Usage: gh createpr JIRA_TICKET (example: LAN-3)`);
         process.exit(1);
       }
 
@@ -22,11 +22,11 @@ program
       const JIRA_API_TOKEN = process.env.JIRA_API_TOKEN || "";
 
       if (!JIRA_BASE_URL || !JIRA_EMAIL || !JIRA_API_TOKEN) {
-        console.error("❌ Error: Faltan variables de entorno (JIRA_BASE_URL, JIRA_EMAIL, JIRA_API_TOKEN)");
+        console.error("❌ Error: Missing environment variables (JIRA_BASE_URL, JIRA_EMAIL, JIRA_API_TOKEN)");
         process.exit(1);
       }
 
-      console.log(`🔍 Obteniendo datos de ${JIRA_TICKET} desde Jira...`);
+      console.log(`🔍 Fetching data for ${JIRA_TICKET} from Jira...`);
 
       const res = await fetch(`${JIRA_BASE_URL}/rest/api/3/issue/${JIRA_TICKET}`, {
         headers: {
@@ -36,21 +36,21 @@ program
       });
 
       if (!res.ok) {
-        throw new Error(`Error de Jira: ${res.status} ${res.statusText}`);
+        throw new Error(`Jira error: ${res.status} ${res.statusText}`);
       }
 
       const response: any = await res.json();
 
-      // Error de Jira
+      // Jira error
       if (response.errorMessages && response.errorMessages.length > 0) {
-        console.error(`❌ Error de Jira: ${response.errorMessages.join(", ")}`);
+        console.error(`❌ Jira error: ${response.errorMessages.join(", ")}`);
         process.exit(1);
       }
 
       const title: string = response.fields?.summary || "";
       const description: string = response.fields?.description?.content?.[0]?.content?.[0]?.text || "";
 
-      // Obtener team
+      // Get team
       const teamFields = [
         response.fields?.customfield_10001?.name,
         response.fields?.customfield_10001,
@@ -62,18 +62,18 @@ program
 
       let team = teamFields.length > 0 ? teamFields[0] : response.fields?.project?.key || "";
 
-      // Validaciones
-      console.log("🔍 Validando datos obtenidos de Jira...");
+      // Validations
+      console.log("🔍 Validating data obtained from Jira...");
       if (!title) {
-        console.error(`❌ Error: No se pudo obtener el título del ticket ${JIRA_TICKET}`);
+        console.error(`❌ Error: Could not get title for ticket ${JIRA_TICKET}`);
         process.exit(1);
       }
       if (!team) {
-        console.error(`❌ Error: No se pudo obtener el Team del ticket ${JIRA_TICKET}`);
+        console.error(`❌ Error: Could not get team for ticket ${JIRA_TICKET}`);
         process.exit(1);
       }
 
-      // Crear slug para la rama
+      // Create slug for branch
       const slugTitle = title
         .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
         .toLowerCase()
@@ -83,38 +83,38 @@ program
       const ticketLower = JIRA_TICKET.toLowerCase();
       const branchName = `${ticketLower}-${slugTitle}`;
 
-      console.log(`✅ Título: ${title}`);
-      console.log(`📝 Descripción: ${description}`);
+      console.log(`✅ Title: ${title}`);
+      console.log(`📝 Description: ${description}`);
       console.log(`👥 Team: ${team}`);
-      console.log(`🌿 Nueva rama: ${branchName}`);
+      console.log(`🌿 New branch: ${branchName}`);
 
-      // Cambiar a develop y actualizar
-      console.log("🔄 Cambiando a develop y actualizando...");
+      // Switch to develop and update
+      console.log("🔄 Switching to develop and updating...");
       execSync(`git checkout develop`, { stdio: "inherit" });
       execSync(`git pull origin develop`, { stdio: "inherit" });
 
-      // Crear nueva rama
-      console.log(`🚧 Creando nueva rama: ${branchName}`);
+      // Create new branch
+      console.log(`🚧 Creating new branch: ${branchName}`);
       execSync(`git checkout -b ${branchName}`, { stdio: "inherit" });
 
-      // Commit inicial
-      console.log("📝 Creando commit inicial...");
+      // Initial commit
+      console.log("📝 Creating initial commit...");
       execSync(`git add .`, { stdio: "inherit" });
       execSync(`git commit -m "feat(${JIRA_TICKET}): initial commit for ${title}" --allow-empty`, { stdio: "inherit" });
 
-      console.log("⬆️  Subiendo rama a origin...");
+      console.log("⬆️  Pushing branch to origin...");
       execSync(`git push origin ${branchName}`, { stdio: "inherit" });
 
-      // Crear PR
-      console.log(`🚀 Creando Pull Request desde ${branchName} hacia develop...`);
+      // Create PR
+      console.log(`🚀 Creating Pull Request from ${branchName} to develop...`);
       const prTitle = team ? `[${JIRA_TICKET}][${team}] ${title}` : `[${JIRA_TICKET}] ${title}`;
       const prBody = `**Relates to Jira ticket [${JIRA_TICKET}](${JIRA_BASE_URL}/browse/${JIRA_TICKET})**\n\n${description}`;
 
       execSync(`gh pr create --title "${prTitle}" --body "${prBody}" --base develop --head "${branchName}"`, { stdio: "inherit" });
 
-      console.log(`🎉 Pull Request creada desde '${branchName}' hacia 'develop'`);
-      console.log(`✅ Ahora estás en la rama '${branchName}' con commit inicial subido`);
-      console.log(`🔗 La PR está lista en GitHub`);
+      console.log(`🎉 Pull Request created from '${branchName}' to 'develop'`);
+      console.log(`✅ You are now on branch '${branchName}' with initial commit pushed`);
+      console.log(`🔗 The PR is ready on GitHub`);
 
       execSync(`git push --set-upstream origin "${branchName}"`, { stdio: "inherit" });
 
