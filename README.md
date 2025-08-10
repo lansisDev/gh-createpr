@@ -16,24 +16,75 @@ A powerful GitHub CLI extension that streamlines the process of creating GitHub 
 
 ## 📋 Prerequisites
 
-Before using this tool, make sure you have:
+Before using this extension, make sure you have:
 
-- **Node.js** (v16 or higher)
+- **GitHub CLI** (v2.0.0 or higher) - [Install here](https://cli.github.com/)
+- **GitHub CLI authenticated** - Run `gh auth login` if not already done
+- **Node.js** (v16 or higher) - Required for the extension runtime
 - **Git** configured with your credentials
-- **GitHub CLI** (`gh`) installed and authenticated
 - **Jira API access** with appropriate permissions
-- A repository with a `develop` branch (default base branch)
+- A repository with a `develop` branch (default base branch for PRs)
+
+### Quick Setup Check
+
+```bash
+# Verify GitHub CLI is installed and authenticated
+gh --version
+gh auth status
+
+# Verify Git is configured
+git config --global user.name
+git config --global user.email
+
+# Verify Node.js version
+node --version
+```
 
 ## 🛠️ Installation
 
-### Install as GitHub CLI Extension
+### Quick Install (Recommended)
 
 ```bash
-# Install directly from GitHub
+# Install the extension directly from GitHub
 gh extension install lansisDev/gh-createpr
 ```
 
-### Manual Installation
+That's it! The extension is now available as `gh createpr`.
+
+### Verify Installation
+
+```bash
+# Check if the extension is installed
+gh extension list
+
+# Test the extension
+gh createpr --help
+```
+
+### Prerequisites for GitHub CLI Extensions
+
+Before installing, ensure you have:
+
+1. **GitHub CLI installed**: [Download here](https://cli.github.com/) or install via:
+   ```bash
+   # macOS
+   brew install gh
+   
+   # Windows
+   winget install --id GitHub.cli
+   
+   # Linux (Ubuntu/Debian)
+   sudo apt install gh
+   ```
+
+2. **GitHub CLI authenticated**:
+   ```bash
+   gh auth login
+   ```
+
+### Manual Installation (for Development)
+
+If you want to contribute or modify the extension:
 
 ```bash
 # Clone the repository
@@ -46,37 +97,108 @@ npm install
 # Build the project
 npm run build
 
-# Install as GitHub CLI extension
+# Install as local GitHub CLI extension
 gh extension install .
 ```
 
-## ⚙️ Configuration
+### Troubleshooting Installation
 
-Set up the required environment variables:
+If you encounter issues:
 
 ```bash
-# Jira Configuration
+# Uninstall and reinstall
+gh extension remove createpr
+gh extension install lansisDev/gh-createpr
+
+# Check GitHub CLI version (requires v2.0.0+)
+gh --version
+
+# Verify GitHub CLI authentication
+gh auth status
+```
+
+## 🚀 Quick Start
+
+1. **Install the extension**:
+   ```bash
+   gh extension install lansisDev/gh-createpr
+   ```
+
+2. **Set up Jira credentials** (see [Configuration](#%EF%B8%8F-configuration) section below):
+   ```bash
+   export JIRA_BASE_URL="https://your-company.atlassian.net"
+   export JIRA_EMAIL="your-email@company.com"
+   export JIRA_API_TOKEN="your-jira-api-token"
+   ```
+
+3. **Navigate to your git repository** and run:
+   ```bash
+   gh createpr LAN-123
+   ```
+
+That's it! The extension will create a branch, commit, and pull request automatically.
+
+## ⚙️ Configuration
+
+### Required Environment Variables
+
+The extension requires these Jira credentials to fetch ticket information:
+
+```bash
 export JIRA_BASE_URL="https://your-company.atlassian.net"
 export JIRA_EMAIL="your-email@company.com"
 export JIRA_API_TOKEN="your-jira-api-token"
 ```
 
-### Getting Jira API Token
+### Step-by-Step Configuration
+
+#### 1. Get Your Jira API Token
 
 1. Go to [Atlassian Account Settings](https://id.atlassian.com/manage-profile/security/api-tokens)
 2. Click "Create API token"
-3. Give it a descriptive name
-4. Copy the generated token
+3. Give it a descriptive name (e.g., "gh-createpr-extension")
+4. Copy the generated token (save it securely!)
 
-### Environment Variables Setup
+#### 2. Find Your Jira Details
 
-Add these to your shell profile (`.bashrc`, `.zshrc`, etc.):
+- **JIRA_BASE_URL**: Your company's Jira URL (e.g., `https://mycompany.atlassian.net`)
+- **JIRA_EMAIL**: The email address associated with your Jira account
+
+#### 3. Set Environment Variables
+
+**Option A: Temporary (current session only)**
+```bash
+export JIRA_BASE_URL="https://your-company.atlassian.net"
+export JIRA_EMAIL="your-email@company.com"
+export JIRA_API_TOKEN="your-jira-api-token"
+```
+
+**Option B: Permanent (recommended)**
+
+Add to your shell profile file (`~/.zshrc`, `~/.bashrc`, or `~/.bash_profile`):
 
 ```bash
-# ~/.zshrc or ~/.bashrc
+# GitHub CLI createpr extension - Jira Configuration
 export JIRA_BASE_URL="https://your-company.atlassian.net"
-export JIRA_EMAIL="your-email@company.com"  
+export JIRA_EMAIL="your-email@company.com"
 export JIRA_API_TOKEN="your-jira-api-token"
+```
+
+Then reload your shell:
+```bash
+source ~/.zshrc  # or ~/.bashrc
+```
+
+#### 4. Verify Configuration
+
+```bash
+# Test that environment variables are set
+echo $JIRA_BASE_URL
+echo $JIRA_EMAIL
+echo $JIRA_API_TOKEN
+
+# Test the extension with a real ticket
+gh createpr YOUR-TICKET-123
 ```
 
 ## 🎯 Usage
