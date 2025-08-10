@@ -231,20 +231,20 @@ gh createpr PROJ-456
 ### Example Output
 
 ```bash
-🔍 Obteniendo datos de LAN-123 desde Jira...
-🔍 Validando datos obtenidos de Jira...
-✅ Título: Add user authentication feature
-📝 Descripción: Implement OAuth2 authentication for user login
+🔍 Fetching data for LAN-123 from Jira...
+🔍 Validating data obtained from Jira...
+✅ Title: Add user authentication feature
+📝 Description: Implement OAuth2 authentication for user login
 👥 Team: Frontend
-🌿 Nueva rama: lan-123-add-user-authentication-feature
-🔄 Cambiando a develop y actualizando...
-🚧 Creando nueva rama: lan-123-add-user-authentication-feature
-📝 Creando commit inicial...
-⬆️  Subiendo rama a origin...
-🚀 Creando Pull Request desde lan-123-add-user-authentication-feature hacia develop...
-🎉 Pull Request creada desde 'lan-123-add-user-authentication-feature' hacia 'develop'
-✅ Ahora estás en la rama 'lan-123-add-user-authentication-feature' con commit inicial subido
-🔗 La PR está ready en GitHub
+🌿 New branch: lan-123-add-user-authentication-feature
+🔄 Switching to develop and updating...
+🚧 Creating new branch: lan-123-add-user-authentication-feature
+📝 Creating initial commit...
+⬆️  Pushing branch to origin...
+🚀 Creating Pull Request from lan-123-add-user-authentication-feature to develop...
+🎉 Pull Request created from 'lan-123-add-user-authentication-feature' to 'develop'
+✅ You are now on branch 'lan-123-add-user-authentication-feature' with initial commit pushed
+🔗 The PR is ready on GitHub
 ```
 
 ## 📁 Project Structure
@@ -379,11 +379,11 @@ chmod +x dist/index.js
 
 ```bash
 # Create and push a tag
-git tag v1.0.0
-git push origin v1.0.0
+git tag v1.1.0
+git push origin v1.1.0
 
 # Create a GitHub release
-gh release create v1.0.0 --title "v1.0.0" --notes "Initial release"
+gh release create v1.1.0 --title "v1.1.0" --notes "English translation release"
 ```
 
 ### 3. Update Manifest
@@ -394,7 +394,7 @@ Ensure `manifest.yml` has the correct tag version:
 name: createpr
 owner: lansisDev
 host: github.com
-tag: v1.0.0
+tag: v1.1.0
 ```
 
 ### 4. Test Installation
@@ -432,6 +432,12 @@ If you encounter any issues or have questions:
 3. Include relevant error messages and environment details
 
 ## 🔄 Changelog
+
+### Version 1.1.0
+- **English Translation**: Translated all Spanish text to English for international accessibility
+- **Improved User Interface**: All console messages, error messages, and help text now in English
+- **Better Documentation**: Example output updated to reflect English interface
+- **Enhanced Usability**: More professional appearance for global developer community
 
 ### Version 1.0.0
 - Initial release
