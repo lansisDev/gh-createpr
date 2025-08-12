@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const fetch = require("node-fetch");
 const { execSync } = require("child_process");
 const { Command } = require("commander");
+// Use native fetch (available in Node.js 18+)
+// @ts-ignore
+const fetch = globalThis.fetch;
 const program = new Command();
 program
     .name("createpr")
