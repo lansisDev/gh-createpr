@@ -105,12 +105,52 @@ program
       console.log("⬆️  Pushing branch to origin...");
       execSync(`git push origin ${branchName}`, { stdio: "inherit" });
 
+
       // Create PR
       console.log(`🚀 Creating Pull Request from ${branchName} to develop...`);
       const prTitle = team ? `[${JIRA_TICKET}][${team}] ${title}` : `[${JIRA_TICKET}] ${title}`;
       const prBody = `**Relates to Jira ticket [${JIRA_TICKET}](${JIRA_BASE_URL}/browse/${JIRA_TICKET})**\n\n${description}`;
 
       execSync(`gh pr create --title "${prTitle}" --body "${prBody}" --base develop --head "${branchName}"`, { stdio: "inherit" });
+
+      // --- JIRA TRANSITION TO IN PROGRESS ---
+      try {
+        console.log(`🔄 Attempting to move Jira ticket ${JIRA_TICKET} to 'In Progress'...`);
+        // 1. Get available transitions
+        const transitionsRes = await fetch(`${JIRA_BASE_URL}/rest/api/3/issue/${JIRA_TICKET}/transitions`, {
+          method: "GET",
+          headers: {
+            "Authorization": "Basic " + Buffer.from(`${JIRA_EMAIL}:${JIRA_API_TOKEN}`).toString("base64"),
+            "Accept": "application/json"
+          }
+        });
+        if (!transitionsRes.ok) throw new Error(`Failed to fetch Jira transitions: ${transitionsRes.status} ${transitionsRes.statusText}`);
+  const transitionsData: any = await transitionsRes.json();
+  const transitions = transitionsData.transitions || [];
+        // 2. Find the transition for 'In Progress' (case-insensitive)
+        const inProgress = transitions.find((t: any) => t.name.toLowerCase() === "in progress");
+        if (!inProgress) {
+          console.warn("⚠️  Could not find 'In Progress' transition for this Jira ticket. No status change made.");
+        } else {
+          // 3. Perform the transition
+          const transitionId = inProgress.id;
+          const doTransitionRes = await fetch(`${JIRA_BASE_URL}/rest/api/3/issue/${JIRA_TICKET}/transitions`, {
+            method: "POST",
+            headers: {
+              "Authorization": "Basic " + Buffer.from(`${JIRA_EMAIL}:${JIRA_API_TOKEN}`).toString("base64"),
+              "Accept": "application/json",
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ transition: { id: transitionId } })
+          });
+          if (!doTransitionRes.ok) {
+            throw new Error(`Failed to transition Jira ticket: ${doTransitionRes.status} ${doTransitionRes.statusText}`);
+          }
+          console.log(`✅ Jira ticket ${JIRA_TICKET} moved to 'In Progress'.`);
+        }
+      } catch (jiraTransitionError: any) {
+        console.warn(`⚠️  Could not transition Jira ticket to 'In Progress': ${jiraTransitionError.message}`);
+      }
 
       console.log(`🎉 Pull Request created from '${branchName}' to 'develop'`);
       console.log(`✅ You are now on branch '${branchName}' with initial commit pushed`);
