@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
-import fetch from "node-fetch";
-import { execSync } from "child_process";
-import { Command } from "commander";
+const fetch = require("node-fetch");
+const { execSync } = require("child_process");
+const { Command } = require("commander");
 
 const program = new Command();
 
