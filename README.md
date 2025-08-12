@@ -40,7 +40,13 @@ git config --global user.email
 node --version
 ```
 
-## 🛠️ Installation
+## Prerequisites
+
+- GitHub CLI (`gh`) installed and authenticated
+- **Node.js 18 or higher** (required for native fetch support)
+- Access to Jira REST API with appropriate permissions
+
+## Installation
 
 ### Quick Install (Recommended)
 
