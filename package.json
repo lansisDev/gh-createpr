@@ -1,13 +1,13 @@
 {
   "name": "gh-createpr",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "main": "dist/index.js",
   "bin": {
     "gh-createpr": "./dist/index.js"
   },
   "scripts": {
-    "build": "tsc",
-    "bundle": "esbuild dist/index.js --bundle --platform=node --target=node16 --outfile=dist/index.js --format=cjs --allow-overwrite",
+    "build": "tsc && npm run bundle",
+    "bundle": "esbuild dist/index.js --bundle --platform=node --target=node18 --outfile=dist/index.js --format=cjs --allow-overwrite",
     "start": "node dist/index.js",
     "dev": "ts-node --esm src/index.ts",
     "prepare": "npm run build && chmod +x gh-createpr && chmod +x dist/index.js",
