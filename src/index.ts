@@ -103,7 +103,7 @@ program
       // Initial commit
       console.log("📝 Creating initial commit...");
       execSync(`git add .`, { stdio: "inherit" });
-      execSync(`git commit -m "feat(${JIRA_TICKET}): initial commit for ${title}" --allow-empty`, { stdio: "inherit" });
+      execSync(`git commit -m "feat(${JIRA_TICKET}): initial commit for ${title}" --allow-empty --no-verify`, { stdio: "inherit" });
 
       console.log("⬆️  Pushing branch to origin...");
       execSync(`git push origin ${branchName}`, { stdio: "inherit" });
