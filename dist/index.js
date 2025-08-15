@@ -3499,7 +3499,7 @@ program.name("createpr").description("Create a GitHub Pull Request from a Jira t
     execSync(`git checkout -b ${branchName}`, { stdio: "inherit" });
     console.log("\u{1F4DD} Creating initial commit...");
     execSync(`git add .`, { stdio: "inherit" });
-    execSync(`git commit -m "feat(${JIRA_TICKET}): initial commit for ${title}" --allow-empty`, { stdio: "inherit" });
+    execSync(`git commit -m "feat(${JIRA_TICKET}): initial commit for ${title}" --allow-empty --no-verify`, { stdio: "inherit" });
     console.log("\u2B06\uFE0F  Pushing branch to origin...");
     execSync(`git push origin ${branchName}`, { stdio: "inherit" });
     console.log(`\u{1F680} Creating Pull Request from ${branchName} to develop...`);
