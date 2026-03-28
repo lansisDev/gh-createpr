@@ -37,7 +37,7 @@ export const getCurrentGitRepo = () => {
     const remoteMatch = currentRemote.match(remoteRegex);
 
     if (!remoteMatch) {
-      throw new Error("No se pudo determinar el repositorio actual desde el remote de git");
+      throw new Error("Could not determine the current repository from the git remote");
     }
 
     const owner = remoteMatch[1] as string;
@@ -48,7 +48,7 @@ export const getCurrentGitRepo = () => {
     
     return { owner, repo };
   } catch (e) {
-    throw new Error("Error obteniendo el repo actual. Asegurate de estar en un repo de git con un remote origin en github.com.");
+    throw new Error("Error getting current repo. Make sure you are in a git repository with an origin remote on github.com.");
   }
 };
 
@@ -57,7 +57,7 @@ export const fetchOpenIssues = async (): Promise<Array<{number: number, title: s
   const GITHUB_TOKEN = process.env.GITHUB_TOKEN || "";
 
   if (!GITHUB_TOKEN) {
-    p.cancel(pc.red("Falta la variable de entorno GITHUB_TOKEN"));
+    p.cancel(pc.red("Missing GITHUB_TOKEN environment variable"));
     process.exit(1);
   }
 
@@ -87,20 +87,20 @@ export const fetchOpenIssues = async (): Promise<Array<{number: number, title: s
   });
 
   if (!res.ok) {
-    throw new Error(`Error en la API de GitHub: ${res.status} ${res.statusText}`);
+    throw new Error(`GitHub API Error: ${res.status} ${res.statusText}`);
   }
 
   const response = (await res.json()) as any;
 
   if (response.errors && response.errors.length > 0) {
-    throw new Error(`Error de GraphQL: ${response.errors.map((e: any) => e.message).join(", ")}`);
+    throw new Error(`GraphQL Error: ${response.errors.map((e: any) => e.message).join(", ")}`);
   }
 
   const issues = response.data?.repository?.issues?.nodes || [];
   return issues;
 };
 
-export const createPrFromGithubIssue = async (issueArg: string) => {
+export const createPrFromGithubIssue = async (issueArg: string, options?: { isInteractiveCLI?: boolean }) => {
   const issueRegex = /^(?:([a-zA-Z0-9-]+)\/([a-zA-Z0-9._-]+)#(\d+)|#(\d+)|(\d+))$/;
   const match = issueArg.match(issueRegex);
 
@@ -123,27 +123,39 @@ export const createPrFromGithubIssue = async (issueArg: string) => {
         const numStr = match[4] || match[5];
         issueNumber = parseInt(numStr as string, 10);
       } catch (e: any) {
+        if (options?.isInteractiveCLI) {
+          p.log.error(e.message);
+          return "back";
+        }
         p.cancel(pc.red(e.message));
         process.exit(1);
       }
     } else {
-      p.cancel(pc.red("Formato de issue inválido. Usá owner/repo#number o #number o simplemente el número."));
+      if (options?.isInteractiveCLI) {
+        p.log.error("Invalid issue format. Use owner/repo#number or #number or just the number.");
+        return "back";
+      }
+      p.cancel(pc.red("Invalid issue format. Use owner/repo#number or #number or just the number."));
       process.exit(1);
     }
   } else {
-    p.cancel(pc.red("Formato de issue inválido. Usá owner/repo#number o #number o simplemente el número."));
+    if (options?.isInteractiveCLI) {
+      p.log.error("Invalid issue format. Use owner/repo#number or #number or just the number.");
+      return "back";
+    }
+    p.cancel(pc.red("Invalid issue format. Use owner/repo#number or #number or just the number."));
     process.exit(1);
   }
 
   const GITHUB_TOKEN = process.env.GITHUB_TOKEN || "";
 
   if (!GITHUB_TOKEN) {
-    p.cancel(pc.red("Falta la variable de entorno GITHUB_TOKEN"));
+    p.cancel(pc.red("Missing GITHUB_TOKEN environment variable"));
     process.exit(1);
   }
 
   const s = p.spinner();
-  s.start(`Buscando issue #${issueNumber} en ${owner}/${repo}...`);
+  s.start(`Searching for issue #${issueNumber} in ${owner}/${repo}...`);
 
   try {
     const query = `
@@ -181,19 +193,19 @@ export const createPrFromGithubIssue = async (issueArg: string) => {
     });
 
     if (!res.ok) {
-      throw new Error(`Error en la API de GitHub: ${res.status} ${res.statusText}`);
+      throw new Error(`GitHub API Error: ${res.status} ${res.statusText}`);
     }
 
     const response = (await res.json()) as any;
 
     if (response.errors && response.errors.length > 0) {
-      throw new Error(`Error de GraphQL: ${response.errors.map((e: any) => e.message).join(", ")}`);
+      throw new Error(`GraphQL Error: ${response.errors.map((e: any) => e.message).join(", ")}`);
     }
 
     const issue = response.data?.repository?.issue;
 
     if (!issue) {
-      throw new Error(`No se encontró la issue #${issueNumber} en ${owner}/${repo}`);
+      throw new Error(`Issue #${issueNumber} not found in ${owner}/${repo}`);
     }
 
     const title: string = issue.title || "";
@@ -201,10 +213,10 @@ export const createPrFromGithubIssue = async (issueArg: string) => {
     const label = issue.labels?.nodes?.[0]?.name;
 
     if (!title) {
-      throw new Error(`No se pudo obtener el título para la issue #${issueNumber}`);
+      throw new Error(`Could not get title for issue #${issueNumber}`);
     }
 
-    s.stop(`Datos de la issue obtenidos correctamente`);
+    s.stop(`Issue data successfully fetched`);
 
     // Create slug for branch
     const slugTitle = title
@@ -217,27 +229,31 @@ export const createPrFromGithubIssue = async (issueArg: string) => {
     const branchName = `${ticketRef}-${slugTitle}`.substring(0, 100);
 
     let summaryText = `${pc.bold("Issue:")} #${issueNumber}\n` +
-                      `${pc.bold("Título:")} ${title}\n`;
+                      `${pc.bold("Title:")} ${title}\n`;
     if (label) summaryText += `${pc.bold("Label:")} ${label}\n`;
-    summaryText += `${pc.bold("Rama:")} ${pc.cyan(branchName)}`;
+    summaryText += `${pc.bold("Branch:")} ${pc.cyan(branchName)}`;
 
-    p.note(summaryText, "Resumen del PR");
+    p.note(summaryText, "PR Summary");
 
     const shouldContinue = await p.confirm({
-      message: '¿Continuar con la creación de la rama y PR?',
+      message: 'Continue with branch and PR creation?',
       initialValue: true,
     });
 
     if (p.isCancel(shouldContinue) || !shouldContinue) {
-      p.cancel('Operación cancelada por el usuario.');
+      if (options?.isInteractiveCLI) {
+        p.log.step('Going back...');
+        return "back";
+      }
+      p.cancel('Operation cancelled by user.');
       process.exit(0);
     }
 
-    s.start('Validando estado de git...');
+    s.start('Validating git status...');
     // Validate: Check for uncommitted changes
     const statusOutput = execSync("git status --porcelain", { encoding: "utf-8" }).trim();
     if (statusOutput) {
-      throw new Error("Tenés cambios sin commitear. Por favor hacé commit o stash antes de correr esto.");
+      throw new Error("You have uncommitted changes. Please commit or stash them before running this.");
     }
     
     // Validate: Check for unpushed commits on current branch
@@ -247,33 +263,33 @@ export const createPrFromGithubIssue = async (issueArg: string) => {
       try {
         const unpushedOutput = execSync(`git log @{u}..HEAD --oneline`, { encoding: "utf-8", stdio: ["pipe", "pipe", "ignore"] }).toString().trim();
         if (unpushedOutput) {
-          throw new Error(`Tenés commits sin pushear en la rama '${currentBranch}'.\nPor favor hacé push antes de correr este script.`);
+          throw new Error(`You have unpushed commits on branch '${currentBranch}'.\nPlease push before running this script.`);
         }
       } catch (e) {
         // No upstream branch, ignore
       }
     }
-    s.stop('Estado de git validado');
+    s.stop('Git status validated');
 
-    s.start('Cambiando a develop y actualizando...');
+    s.start('Switching to develop and updating...');
     execSync(`git checkout develop`, { stdio: "ignore" });
     execSync(`git pull origin develop`, { stdio: "ignore" });
-    s.stop('Rama develop actualizada');
+    s.stop('Develop branch updated');
 
-    s.start(`Creando nueva rama: ${branchName}`);
+    s.start(`Creating new branch: ${branchName}`);
     execSync(`git checkout -b ${branchName}`, { stdio: "ignore" });
-    s.stop(`Rama ${pc.cyan(branchName)} creada`);
+    s.stop(`Branch ${pc.cyan(branchName)} created`);
 
-    s.start('Creando commit inicial...');
+    s.start('Creating initial commit...');
     execSync(`git add .`, { stdio: "ignore" });
     execSync(`git commit -m "feat(${ticketRef}): initial commit for ${title}" --allow-empty --no-verify`, { stdio: "ignore" });
-    s.stop('Commit inicial creado');
+    s.stop('Initial commit created');
 
-    s.start('Pusheando rama al remoto...');
+    s.start('Pushing branch to remote...');
     execSync(`git push origin ${branchName}`, { stdio: "ignore" });
-    s.stop('Rama pusheada');
+    s.stop('Branch pushed');
 
-    s.start('Creando Pull Request en GitHub...');
+    s.start('Creating Pull Request on GitHub...');
     const prTitle = label
       ? `[${ticketRef}][${label}] ${title}`
       : `[${ticketRef}] ${title}`;
@@ -284,14 +300,19 @@ export const createPrFromGithubIssue = async (issueArg: string) => {
       : `**Relates to GitHub issue [${issueNumber}](${issueUrl})**`;
 
     execSync(`gh pr create --title "${prTitle}" --body "${prBody}" --base develop --head "${branchName}"`, { stdio: "ignore" });
-    s.stop('Pull Request creado');
+    s.stop('Pull Request created');
 
     execSync(`git push --set-upstream origin "${branchName}"`, { stdio: "ignore" });
     
-    p.outro(`¡Todo listo! Estás en la rama ${pc.cyan(branchName)} y la PR ya está subida.`);
+    p.outro(`All done! You are on branch ${pc.cyan(branchName)} and the PR has been created.`);
+    return "success";
 
   } catch (err: any) {
-    s.stop('Ocurrió un error');
+    s.stop('An error occurred');
+    if (options?.isInteractiveCLI) {
+      p.log.error(`Error: ${err.message}`);
+      return "back";
+    }
     p.cancel(pc.red(`Error: ${err.message}`));
     process.exit(1);
   }
