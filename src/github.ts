@@ -225,7 +225,7 @@ export const createPrFromGithubIssue = async (issueArg: string, options?: { isIn
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-+|-+$/g, "");
 
-    const ticketRef = `${owner}-${repo}-${issueNumber}`;
+    const ticketRef = `${repo}-${issueNumber}`;
     const branchName = `${ticketRef}-${slugTitle}`.substring(0, 100);
 
     let summaryText = `${pc.bold("Issue:")} #${issueNumber}\n` +
