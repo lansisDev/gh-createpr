@@ -223,9 +223,38 @@ export const createPrFromJira = async (jiraTicket: string, options?: { isInterac
     execSync(`gh pr create --title "${prTitle}" --body "${prBody}" --base develop --head "${branchName}"`, { stdio: "ignore" });
     s.stop('Pull Request created');
 
-    // JIRA TRANSITION TO IN PROGRESS
-    s.start(`Moving ticket ${jiraTicket} to 'In Progress'...`);
+    // JIRA TRANSITION TO IN PROGRESS AND ASSIGNMENT
+    s.start(`Updating ticket ${jiraTicket} in Jira (Assigning to you & moving to 'In Progress')...`);
     try {
+      // 1. Get current user's Account ID
+      const userRes = await fetch(`${baseUrl}/rest/api/3/myself`, {
+        method: "GET",
+        headers: {
+          "Authorization": "Basic " + Buffer.from(`${JIRA_EMAIL}:${JIRA_API_TOKEN}`).toString("base64"),
+          "Accept": "application/json",
+          "User-Agent": "gh-createpr/1.4.0"
+        }
+      });
+      if (userRes.ok) {
+        const userData: any = await userRes.json();
+        const accountId = userData.accountId;
+
+        // 2. Assign ticket to current user
+        if (accountId) {
+          await fetch(`${baseUrl}/rest/api/3/issue/${jiraTicket}/assignee`, {
+            method: "PUT",
+            headers: {
+              "Authorization": "Basic " + Buffer.from(`${JIRA_EMAIL}:${JIRA_API_TOKEN}`).toString("base64"),
+              "Accept": "application/json",
+              "Content-Type": "application/json",
+              "User-Agent": "gh-createpr/1.4.0"
+            },
+            body: JSON.stringify({ accountId })
+          });
+        }
+      }
+
+      // 3. Move to 'In Progress'
       const transitionsRes = await fetch(`${baseUrl}/rest/api/3/issue/${jiraTicket}/transitions`, {
         method: "GET",
         headers: {
@@ -236,7 +265,10 @@ export const createPrFromJira = async (jiraTicket: string, options?: { isInterac
       if (transitionsRes.ok) {
         const transitionsData: any = await transitionsRes.json();
         const transitions = transitionsData.transitions || [];
-        const inProgress = transitions.find((t: any) => t.name.toLowerCase() === "in progress");
+        const inProgress = transitions.find((t: any) => {
+          const name = t.name.toLowerCase();
+          return name === "in progress" || name === "en curso" || name === "doing" || name === "en progreso";
+        });
         
         if (inProgress) {
           const doTransitionRes = await fetch(`${baseUrl}/rest/api/3/issue/${jiraTicket}/transitions`, {
@@ -244,23 +276,24 @@ export const createPrFromJira = async (jiraTicket: string, options?: { isInterac
             headers: {
               "Authorization": "Basic " + Buffer.from(`${JIRA_EMAIL}:${JIRA_API_TOKEN}`).toString("base64"),
               "Accept": "application/json",
-              "Content-Type": "application/json"
+              "Content-Type": "application/json",
+              "User-Agent": "gh-createpr/1.4.0"
             },
             body: JSON.stringify({ transition: { id: inProgress.id } })
           });
           if (!doTransitionRes.ok) {
             p.log.warn(`Could not move to In Progress: ${doTransitionRes.statusText}`);
           } else {
-            p.log.success(`Ticket ${jiraTicket} moved to 'In Progress' in Jira`);
+            p.log.success(`Ticket ${jiraTicket} assigned to you and moved to 'In Progress' in Jira`);
           }
         } else {
-          p.log.warn("State 'In Progress' not found for this ticket.");
+          p.log.warn("State 'In Progress' not found for this ticket. Ticket assigned but not moved.");
         }
       }
     } catch (jiraTransitionError: any) {
-      p.log.warn(`Error attempting to move in Jira: ${jiraTransitionError.message}`);
+      p.log.warn(`Error attempting to update ticket in Jira: ${jiraTransitionError.message}`);
     }
-    s.stop('Jira transition processed');
+    s.stop('Jira updates processed');
 
     execSync(`git push --set-upstream origin "${branchName}"`, { stdio: "ignore" });
     p.outro(`All done! You are on branch ${pc.cyan(branchName)} and the PR has been created.`);

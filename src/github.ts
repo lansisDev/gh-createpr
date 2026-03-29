@@ -296,11 +296,25 @@ export const createPrFromGithubIssue = async (issueArg: string, options?: { isIn
 
     const issueUrl = `https://github.com/${owner}/${repo}/issues/${issueNumber}`;
     const prBody = description
-      ? `**Relates to GitHub issue [${issueNumber}](${issueUrl})**\n\n${description}`
-      : `**Relates to GitHub issue [${issueNumber}](${issueUrl})**`;
+      ? `**Resolves #${issueNumber}**\n\n${description}`
+      : `**Resolves #${issueNumber}**`;
 
     execSync(`gh pr create --title "${prTitle}" --body "${prBody}" --base develop --head "${branchName}"`, { stdio: "ignore" });
     s.stop('Pull Request created');
+
+    s.start(`Assigning issue #${issueNumber} to you and adding 'In Progress' label...`);
+    try {
+      // We try to create the label first just in case it doesn't exist (ignores if it does)
+      try {
+        execSync(`gh label create "In Progress" -c "#0075ca" --repo ${owner}/${repo}`, { stdio: "ignore" });
+      } catch (e) {}
+      
+      execSync(`gh issue edit ${issueNumber} --add-assignee "@me" --add-label "In Progress" --repo ${owner}/${repo}`, { stdio: "ignore" });
+    } catch (e) {
+      // It might fail if the user is already assigned or doesn't have permissions
+      p.log.warn(`⚠️ Could not fully update the issue (label/assignee). You might lack permissions.`);
+    }
+    s.stop(`Issue #${issueNumber} updated (assigned & labeled)`);
 
     execSync(`git push --set-upstream origin "${branchName}"`, { stdio: "ignore" });
     
