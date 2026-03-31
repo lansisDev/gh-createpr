@@ -11,7 +11,7 @@ const program = new Command();
 program
   .name("gh-createpr")
   .description("Interactive CLI to create GitHub Pull Requests from Jira or GitHub Issues")
-  .version("1.4.0");
+  .version("1.4.3");
 
 program
   .command("jira")
