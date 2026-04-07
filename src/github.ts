@@ -282,7 +282,7 @@ export const createPrFromGithubIssue = async (issueArg: string, options?: { isIn
 
     s.start('Creating initial commit...');
     execSync(`git add .`, { stdio: "ignore" });
-    execSync(`git commit -m "feat(${ticketRef}): initial commit for ${title}" --allow-empty --no-verify`, { stdio: "ignore" });
+    execSync(`git commit -m "[${ticketRef}] feat: initial commit for ${title}" --allow-empty --no-verify`, { stdio: "ignore" });
     s.stop('Initial commit created');
 
     s.start('Pushing branch to remote...');

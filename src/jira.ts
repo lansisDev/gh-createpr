@@ -210,7 +210,7 @@ export const createPrFromJira = async (jiraTicket: string, options?: { isInterac
 
     s.start('Creating initial commit...');
     execSync(`git add .`, { stdio: "ignore" });
-    execSync(`git commit -m "feat(${jiraTicket}): initial commit for ${title}" --allow-empty --no-verify`, { stdio: "ignore" });
+    execSync(`git commit -m "[${jiraTicket}] feat: initial commit for ${title}" --allow-empty --no-verify`, { stdio: "ignore" });
     s.stop('Initial commit created');
 
     s.start('Pushing branch to remote...');
