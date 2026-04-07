@@ -1,6 +1,6 @@
 {
   "name": "@lansisdev/gh-createpr",
-  "version": "1.4.3",
+  "version": "1.4.4",
   "main": "dist/index.js",
   "bin": {
     "gh-createpr": "dist/index.js"
