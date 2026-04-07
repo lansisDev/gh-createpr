@@ -5,13 +5,17 @@ import * as p from "@clack/prompts";
 import pc from "picocolors";
 import { createPrFromJira, fetchOpenJiraTickets, getJiraProjectKey } from "./jira.js";
 import { createPrFromGithubIssue, fetchOpenIssues } from "./github.js";
+import { createRequire } from "module";
+
+const require = createRequire(import.meta.url);
+const packageJson = require("../package.json");
 
 const program = new Command();
 
 program
   .name("gh-createpr")
   .description("Interactive CLI to create GitHub Pull Requests from Jira or GitHub Issues")
-  .version("1.4.3");
+  .version(packageJson.version);
 
 program
   .command("jira")
