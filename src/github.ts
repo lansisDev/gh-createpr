@@ -299,7 +299,10 @@ export const createPrFromGithubIssue = async (issueArg: string, options?: { isIn
       ? `**Resolves #${issueNumber}**\n\n${description}`
       : `**Resolves #${issueNumber}**`;
 
-    execSync(`gh pr create --title "${prTitle}" --body "${prBody}" --base develop --head "${branchName}"`, { stdio: "ignore" });
+    execSync(`gh pr create --title "${prTitle}" --body - --base develop --head "${branchName}"`, {
+      input: prBody,
+      stdio: ["pipe", "inherit", "inherit"]
+    });
     s.stop('Pull Request created');
 
     s.start(`Assigning issue #${issueNumber} to you and adding 'In Progress' label...`);
