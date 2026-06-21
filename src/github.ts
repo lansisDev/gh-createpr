@@ -100,6 +100,15 @@ export const fetchOpenIssues = async (): Promise<Array<{number: number, title: s
   return issues;
 };
 
+export const fetchOpenPRs = (): Array<{number: number, title: string, headRefName: string, baseRefName: string}> => {
+  try {
+    const output = execSync('gh pr list --state OPEN --json number,title,headRefName,baseRefName --limit 50', { encoding: 'utf-8' });
+    return JSON.parse(output);
+  } catch {
+    return [];
+  }
+};
+
 export const createPrFromGithubIssue = async (issueArg: string, options?: { isInteractiveCLI?: boolean }) => {
   const issueRegex = /^(?:([a-zA-Z0-9-]+)\/([a-zA-Z0-9._-]+)#(\d+)|#(\d+)|(\d+))$/;
   const match = issueArg.match(issueRegex);

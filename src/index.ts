@@ -4,11 +4,37 @@ import { Command } from "commander";
 import * as p from "@clack/prompts";
 import pc from "picocolors";
 import { createPrFromJira, fetchOpenJiraTickets, getJiraProjectKey } from "./jira.js";
-import { createPrFromGithubIssue, fetchOpenIssues } from "./github.js";
+import { createPrFromGithubIssue, fetchOpenIssues, fetchOpenPRs } from "./github.js";
 import { createRequire } from "module";
 
 const require = createRequire(import.meta.url);
 const packageJson = require("../package.json");
+
+const checkOpenPRsBeforeProceed = async (): Promise<boolean> => {
+  const s = p.spinner();
+  s.start('Checking for open PRs...');
+  const openPRs = fetchOpenPRs();
+  s.stop(openPRs.length > 0 ? `${openPRs.length} open PR(s) found.` : 'No open PRs found. All clear!');
+
+  if (openPRs.length === 0) return true;
+
+  p.note(
+    openPRs.map(pr => `#${pr.number} - ${pr.title} ${pc.gray(`(${pr.headRefName} → ${pr.baseRefName})`)}`).join('\n'),
+    `📋 You have ${openPRs.length} open PR(s)`
+  );
+
+  const shouldContinue = await p.confirm({
+    message: 'Hay PRs abiertas sin mergear. ¿Querés continuar o preferís cancelar para mergearlas primero?',
+    initialValue: false,
+  });
+
+  if (p.isCancel(shouldContinue) || !shouldContinue) {
+    p.cancel('Operación cancelada. Mergeá las PRs abiertas primero y volvé a intentarlo.');
+    return false;
+  }
+
+  return true;
+};
 
 const program = new Command();
 
@@ -24,6 +50,10 @@ program
   .action(async (ticket: string | undefined) => {
     let finalTicket = ticket;
     
+    if (!(await checkOpenPRsBeforeProceed())) {
+      process.exit(0);
+    }
+
     if (!finalTicket) {
       p.intro(pc.bgBlue(pc.white(" gh-createpr: Jira ")));
       const result = await p.text({
@@ -50,6 +80,10 @@ program
   .action(async (issue: string | undefined) => {
     let finalIssue = issue;
     
+    if (!(await checkOpenPRsBeforeProceed())) {
+      process.exit(0);
+    }
+
     if (!finalIssue) {
       p.intro(pc.bgMagenta(pc.white(" gh-createpr: GitHub Issue ")));
       const result = await p.text({
@@ -71,6 +105,11 @@ program
 
 program.action(async () => {
   p.intro(pc.bgCyan(pc.black(" gh-createpr: Interactive CLI ")));
+
+  // Check for open PRs before starting
+  if (!(await checkOpenPRsBeforeProceed())) {
+    process.exit(0);
+  }
 
   let currentState = "SELECT_SOURCE";
   let sourceType = "";
